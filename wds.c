@@ -17,7 +17,7 @@
 #define IPV4_RULE 0
 #define IPV6_RULE 1
 static struct nf_hook_ops my_hook_ops;	//hook结构体
-
+//test
 //源端口 目的端口 源地址 目的地址 协议
 struct my_rule{
 	unsigned short rule;
