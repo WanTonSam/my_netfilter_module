@@ -66,20 +66,19 @@ int main()
 		return 1;
 	}
 	
-	read_rules_from_file("/home/sam/my_hook_module/rule.txt", rules, MAX_RULE, &rule_count);
+	read_rules_from_file("/home/ubuntu/my_netfilter_module/rule.txt", rules, MAX_RULE, &rule_count);
 
+	if (mknod("/dev/controlinfo", S_IFCHR | 0666, makedev(124, 0)) == -1) 
+	{
+        	perror("mknod error\n");
+    }
 	fd = open("/dev/controlinfo", O_WRONLY);
 
 	if (fd == -1)
 	{
 		printf("Failed to open device file\n");
 		return -1;
-	}
-	
-	if (mknod("/dev/controlinfo", S_IFCHR | 0666, makedev(124, 0)) == -1) {
-        	perror("mknod error\n");
-        	return -1;
-    	}
+	}	
     	
 	printf("rule_count %d\n", rule_count);
 	ssize_t bytes_written = write(fd, &rules, sizeof(struct my_rule) * rule_count);
