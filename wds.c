@@ -16,6 +16,7 @@
 #define NMATCH 0
 #define IPV4_RULE 0
 #define IPV6_RULE 1
+#define INET6_ADDRSTRLEN 50
 static struct nf_hook_ops my_hook_ops;	//hook结构体
 struct in_6_addr_ext{
 	struct in6_addr ipv6_addr;
@@ -52,6 +53,8 @@ char src_addr_buff[16];
 char dst_addr_buff[16];
 char protocol_buff[16];
 char time_buff[50];
+char ipv6_src_addr_buff[INET6_ADDRSTRLEN + 1];
+char ipv6_dst_addr_buff[INET6_ADDRSTRLEN + 1];
 char * getprotobynumber(char *protocol_name, __u8 protocol)
 {
 	switch (protocol) {
@@ -77,6 +80,19 @@ char * addr_from_net(char *buff, __be32 addr)
 	snprintf(buff, 16, "%u.%u.%u.%u", 
 		(__u32)p[0], (__u32)p[1], (__u32)p[2], (__u32)p[3]);
 	return buff;
+}
+
+// 模拟 inet_ntop 函数，将 IPv6 地址转换为字符串 void * 值得学习！！！
+const char *my_inet_ntop(const void *src, char *dst, size_t size) {
+	const struct in6_addr *addr6 = (const struct in6_addr *)src;
+	if (size < INET6_ADDRSTRLEN) 
+		return NULL;  // 缓冲区太小
+	snprintf(dst, size, "%x:%x:%x:%x:%x:%x:%x:%x",
+		ntohs(addr6->s6_addr16[0]), ntohs(addr6->s6_addr16[1]),
+		ntohs(addr6->s6_addr16[2]), ntohs(addr6->s6_addr16[3]),
+		ntohs(addr6->s6_addr16[4]), ntohs(addr6->s6_addr16[5]),
+		ntohs(addr6->s6_addr16[6]), ntohs(addr6->s6_addr16[7]));
+	return dst;
 }
 
 bool check_time(struct rtc_time * tm, int i)	//是否在运行时间内 true在运行时间内
@@ -177,6 +193,19 @@ static unsigned int process_rule_for_ipv6(void)
 {
 	int i;
 	bool reject = false;
+	// 使用 inet_ntop 将 in6_addr 转换为字符串
+	if (my_inet_ntop(&ipv6_header->saddr, ipv6_src_addr_buff, sizeof(ipv6_src_addr_buff)) == NULL) 
+	{
+        printk("inet_ntop error");
+		return NF_ACCEPT;
+    }
+
+    if (my_inet_ntop(&ipv6_header->daddr, ipv6_dst_addr_buff, sizeof(ipv6_dst_addr_buff)) == NULL) 
+	{
+        printk("inet_ntop error");
+		return NF_ACCEPT;
+    }
+
 	for (i = 0; i < rule_num; i++)
 	{
 		if (rules[i].rule != IPV6_RULE) continue;	//rule doesn't match
@@ -202,7 +231,17 @@ static unsigned int process_rule_for_ipv6(void)
 			printk("Unknow protocol!\n");
 			break;
 		}
-		
+
+		if (reject)
+		{
+			printk("Time[%s] reject a packet by rule %d : %s from %s:%s to %s:%s \n", 	\
+				time_buff, i + 1, getprotobynumber(protocol_buff, ip_header->protocol), \
+				addr_from_net(src_addr_buff, ip_header->saddr), 						\
+				src_port_buff, 															\
+				addr_from_net(dst_addr_buff, ip_header->daddr), 						\
+				dst_port_buff);
+			return NF_DROP;
+		}	
 	}
 	return NF_ACCEPT;
 }
@@ -228,9 +267,6 @@ unsigned int MY_hook_func(void * priv,struct sk_buff *skb,const struct nf_hook_s
 	
 	tmpskb = skb;
 	//handle ipv4 packet
-	
-
-	
 	if (skb->protocol == htons(ETH_P_IP))
 	{
 		ip_header = ip_hdr(skb);
