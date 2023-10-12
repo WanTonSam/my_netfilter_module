@@ -66,7 +66,7 @@ int main()
 		return 1;
 	}
 	
-	read_rules_from_file("/home/ubuntu/my_netfilter_module/rule.txt", rules, MAX_RULE, &rule_count);
+	read_rules_from_file("rule.txt", rules, MAX_RULE, &rule_count);
 
 	if (mknod("/dev/controlinfo", S_IFCHR | 0666, makedev(124, 0)) == -1) 
 	{
