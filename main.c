@@ -6,6 +6,13 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
+#include <linux/ipv6.h> // IPv6头文件
+
+struct in_6_addr_ext{
+	struct in6_addr ipv6_addr;
+	unsigned short vaild;
+};
+
 struct my_rule{
 	unsigned short rule;
 	unsigned int src_add;
@@ -16,6 +23,8 @@ struct my_rule{
 	unsigned int time_flag;
 	unsigned int time_begin;
 	unsigned int time_end;
+	struct in_6_addr_ext ipv6_saddr;
+	struct in_6_addr_ext ipv6_daddr;
 };
 
 #define MAX_RULE 50

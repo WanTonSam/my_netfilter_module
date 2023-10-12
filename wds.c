@@ -17,7 +17,10 @@
 #define IPV4_RULE 0
 #define IPV6_RULE 1
 static struct nf_hook_ops my_hook_ops;	//hook结构体
-
+struct in_6_addr_ext{
+	struct in6_addr ipv6_addr;
+	unsigned short vaild;
+};
 //源端口 目的端口 源地址 目的地址 协议
 struct my_rule{
 	unsigned short rule;
@@ -29,6 +32,8 @@ struct my_rule{
 	unsigned int time_flag;
 	unsigned int time_begin;
 	unsigned int time_end;
+	struct in_6_addr_ext ipv6_saddr;
+	struct in_6_addr_ext ipv6_daddr;
 };
 struct my_rule rules[50]; //MAX to 50
 static int rule_num = 0;
@@ -74,7 +79,7 @@ char * addr_from_net(char *buff, __be32 addr)
 	return buff;
 }
 
-bool check_time(struct rtc_time * tm, int i)
+bool check_time(struct rtc_time * tm, int i)	//是否在运行时间内 true在运行时间内
 {
 	if (tm->tm_hour * 60 +  tm->tm_min >= rules[i].time_begin && tm->tm_hour *60 + tm->tm_min <= rules[i].time_end)
 		return true;
@@ -100,6 +105,17 @@ bool ip_port_check(unsigned short sport, unsigned short dport, unsigned int i)
 		return dport == rules[i].dst_port;
 	else if (rules[i].src_port != 0 && rules[i].dst_port != 0)
 		return sport == rules[i].src_port && dport == rules[i].dst_port;
+	return true;
+}
+
+bool ipv6_addr_check(struct in6_addr saddr, struct in6_addr daddr, int i)
+{
+	if (rules[i].ipv6_saddr.vaild != 0 && rules[i].ipv6_daddr.vaild == 0)
+		return memcmp(&saddr, &rules[i].ipv6_saddr, sizeof(struct in6_addr));
+	else if (rules[i].ipv6_saddr.vaild == 0 && rules[i].ipv6_daddr.vaild != 0)
+		return memcmp(&daddr, &rules[i].ipv6_daddr, sizeof(struct in6_addr));
+	else if (rules[i].ipv6_saddr.vaild != 0 && rules[i].ipv6_daddr.vaild != 0)
+		return memcmp(&saddr, &rules[i].ipv6_saddr, sizeof(struct in6_addr)) && memcmp(&daddr, &rules[i].ipv6_daddr, sizeof(struct in6_addr));
 	return true;
 }
 
@@ -144,7 +160,12 @@ static unsigned int process_rule_for_ipv4(void)
 		if (reject)
 		{
 			//printk message
-			printk("Time[%s]reject a packet by rule %d : %s from %s:%s to %s:%s \n", time_buff, i + 1, getprotobynumber(protocol_buff, ip_header->protocol), addr_from_net(src_addr_buff, ip_header->saddr), src_port_buff, addr_from_net(dst_addr_buff, ip_header->daddr), dst_port_buff);
+			printk("Time[%s] reject a packet by rule %d : %s from %s:%s to %s:%s \n", 	\
+				time_buff, i + 1, getprotobynumber(protocol_buff, ip_header->protocol), \
+				addr_from_net(src_addr_buff, ip_header->saddr), 						\
+				src_port_buff, 															\
+				addr_from_net(dst_addr_buff, ip_header->daddr), 						\
+				dst_port_buff);
 			return NF_DROP;
 		}
 	}
@@ -155,11 +176,32 @@ static unsigned int process_rule_for_ipv4(void)
 static unsigned int process_rule_for_ipv6(void)
 {
 	int i;
+	bool reject = false;
 	for (i = 0; i < rule_num; i++)
 	{
-		if (rules[i].rule != IPV4_RULE) continue;	//rule doesn't match
+		if (rules[i].rule != IPV6_RULE) continue;	//rule doesn't match
 		
-		if (rules[i].time_flag == 1 && check_time(&tm, i) == 0) continue;
+		if (rules[i].time_flag == 1 && check_time(&tm, i) == false) continue;
+
+		switch (ipv6_header->nexthdr)
+		{
+		case IPPROTO_ICMP :
+			reject = ipv6_addr_check(ipv6_header->saddr, ipv6_header->daddr, i);
+			break;
+		case IPPROTO_TCP :
+			struct tcphdr *ptcphdr = NULL;
+			ptcphdr = (struct tcphdr*)(skb_transport_header(tmpskb));
+			reject = ipv6_addr_check(ipv6_header->saddr, ipv6_header->daddr, i) && ip_port_check(ptcphdr->source, ptcphdr->dest, i);
+			break;
+		case IPPROTO_UDP :
+			struct udphdr *pudphdr = NULL;
+			pudphdr = (struct udphdr *)(skb_transport_header(tmpskb));
+			reject = ipv6_addr_check(ipv6_header->saddr, ipv6_header->daddr, i) && ip_port_check(pudphdr->source, pudphdr->dest, i);
+			break;	
+		default:
+			printk("Unknow protocol!\n");
+			break;
+		}
 		
 	}
 	return NF_ACCEPT;
@@ -244,7 +286,7 @@ static int __init MY_Firewall(void)
 	printk("initiate the module \n");	//\n 刷新控制台，立即输出
 	my_hook_ops.hook = MY_hook_func;
 	my_hook_ops.pf = NFPROTO_INET;	//IPv4、IPv6
-	my_hook_ops.hooknum = NF_INET_POST_ROUTING;	//在NF_INET_PRE_ROUTING点上处理数据包 Linux 主机自己发出的数据包通常不会经过 PREROUTING 阶段，而是经过 OUTPUT 链
+	my_hook_ops.hooknum = NF_INET_PRE_ROUTING;	//在NF_INET_PRE_ROUTING点上处理数据包 Linux 主机自己发出的数据包通常不会经过 PREROUTING 阶段，而是经过 OUTPUT 链
 	//Netfilter允许在同一钩子点上注册多个钩子函数，而优先级用于确定它们的执行顺序。
 	my_hook_ops.priority = NF_IP_PRI_FIRST; 
 	nf_register_net_hook(&init_net,&my_hook_ops); //init_net Linux内核全局变量,一个指向默认网络命名空间的指针
