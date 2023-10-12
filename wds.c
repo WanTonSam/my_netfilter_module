@@ -236,9 +236,9 @@ static unsigned int process_rule_for_ipv6(void)
 		{
 			printk("Time[%s] reject a packet by rule %d : %s from %s:%s to %s:%s \n", 	\
 				time_buff, i + 1, getprotobynumber(protocol_buff, ip_header->protocol), \
-				addr_from_net(src_addr_buff, ip_header->saddr), 						\
+				ipv6_src_addr_buff, 													\
 				src_port_buff, 															\
-				addr_from_net(dst_addr_buff, ip_header->daddr), 						\
+				ipv6_dst_addr_buff, 													\
 				dst_port_buff);
 			return NF_DROP;
 		}	
