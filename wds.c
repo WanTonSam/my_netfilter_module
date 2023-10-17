@@ -352,7 +352,7 @@ unsigned int MY_hook_func(void * priv,struct sk_buff *skb,const struct nf_hook_s
 		pkt_info.src_addr = &ip_header->saddr;
 		pkt_info.dst_addr = &ip_header->daddr;
 		pkt_info.is_ipv6 = false;
-		printk("this is a ipv4 packet!\n");
+		//printk("this is a ipv4 packet!\n");
 	}
 	//handle ipv6 packet
 	else if (skb->protocol == htons(ETH_P_IPV6))
@@ -362,7 +362,7 @@ unsigned int MY_hook_func(void * priv,struct sk_buff *skb,const struct nf_hook_s
 		pkt_info.src_addr = &ipv6_header->saddr;
 		pkt_info.dst_addr = &ipv6_header->daddr;
 		pkt_info.is_ipv6 = true;
-		printk("this is a ipv6 packet!\n");
+		//printk("this is a ipv6 packet!\n");
 	}
 	else 
 	{
