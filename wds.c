@@ -159,11 +159,11 @@ bool rule_matches(const PacketInfo *pkt_info, int rule_index)
 	if (rules[rule_index].protocol != pkt_info->protocol) 
 		return false;
 	//指针强制转换
-	if (pkt_info->is_ipv6 && !ipv6_addr_check(*(struct in6_addr *)pkt_info->src_addr, *(struct in6_addr *)pkt_info->src_addr, rule_index))
+	if (pkt_info->is_ipv6 && !ipv6_addr_check(*(struct in6_addr *)pkt_info->src_addr, *(struct in6_addr *)pkt_info->dst_addr, rule_index))
 	{
 		return false;
 	}
-	else if (!ip_addr_check(*(unsigned int *)pkt_info->src_addr, *(unsigned int *)pkt_info->src_addr, rule_index))
+	else if (!pkt_info->is_ipv6 && !ip_addr_check(*(unsigned int *)pkt_info->src_addr, *(unsigned int *)pkt_info->dst_addr, rule_index))
 	{
 		return false;
 	}
@@ -179,22 +179,29 @@ bool rule_matches(const PacketInfo *pkt_info, int rule_index)
 static unsigned int process_rule(PacketInfo * pkt_info)
 {
 	int i;
-	//利用P acketInfo 对IPv4 和 IPv6 进行透明处理
-	if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP)
+	//利用PacketInfo 对IPv4 和 IPv6 进行透明处理
+	if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP) 
 	{
-		struct tcphdr *hdr = (struct tcphdr*)skb_transport_header(tmpskb);	//get the port value
-		pkt_info->src_port = hdr->source;
-		pkt_info->dst_port = hdr->dest;
-	}
-	
+		struct tcphdr *hdr = (struct tcphdr*)skb_transport_header(tmpskb);
+		pkt_info->src_port = ntohs(hdr->source);
+		pkt_info->dst_port = ntohs(hdr->dest);
+	} 
+		
 	for (i = 0; i < rule_num; i++)
 	{
+		if ((pkt_info->is_ipv6 && rules[i].rule != IPV6_RULE) ||
+			(!pkt_info->is_ipv6 && rules[i].rule != IPV4_RULE))
+			continue;
+		
+		if (rules[i].time_flag == 1 && !check_time(&tm, i))
+			continue;
+
 		if (rule_matches(pkt_info, i))
 		{
 			printk("Time[%s] reject a packet by rule %d : %s from %s:%d to %s:%d \n",
 				time_buff, i + 1, getprotobynumber(pkt_info->protocol), 
-				addr_to_str[pkt_info->is_ipv6](pkt_info->src_addr, src_addr_buff), ntohs(pkt_info->src_port),
-				addr_to_str[pkt_info->is_ipv6](pkt_info->dst_addr, dst_addr_buff), ntohs(pkt_info->dst_port)
+				addr_to_str[pkt_info->is_ipv6](pkt_info->src_addr, src_addr_buff), pkt_info->src_port,
+				addr_to_str[pkt_info->is_ipv6](pkt_info->dst_addr, dst_addr_buff), pkt_info->dst_port
 				);
 			return NF_DROP;
 		}
