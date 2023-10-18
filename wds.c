@@ -183,8 +183,8 @@ static unsigned int process_rule(PacketInfo * pkt_info)
 	if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP) 
 	{
 		struct tcphdr *hdr = (struct tcphdr*)skb_transport_header(tmpskb);
-		pkt_info->src_port = ntohs(hdr->source);
-		pkt_info->dst_port = ntohs(hdr->dest);
+		pkt_info->src_port = hdr->source;
+		pkt_info->dst_port = hdr->dest;
 	} 
 		
 	for (i = 0; i < rule_num; i++)
