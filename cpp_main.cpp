@@ -21,7 +21,6 @@ private:
 int main(int argc, char * argv[])
 {
     configure config;
-    config.read_rule();
-    config.query_rule();
+    config.loadRuleFromFile();
     return 0;
 }

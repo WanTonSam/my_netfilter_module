@@ -1,14 +1,23 @@
 #include <linux/ipv6.h> // IPv6头文件
+#include <vector>
+
+
 #define FILE_RULE "rule.txt"
 #define MAX_RULE 50
 
+enum operation{
+	Add_rule = 0,
+	Delete_rule,
+	Modify_rule,
+};
+
 struct in_6_addr_ext{
 	struct in6_addr ipv6_addr;
-	unsigned short vaild;
+	unsigned short valid;
 };
 
 struct my_rule{
-	unsigned short rule;
+	unsigned short rule;	//保存的全是网络字节序，可以直接比较
 	unsigned int src_add;
 	unsigned short src_port;
 	unsigned int dst_add;
@@ -24,11 +33,13 @@ struct my_rule{
 class configure  {
 public:
     configure(std::string R = FILE_RULE) : rule_name(R), rules{{{}}} {};
-    bool read_rule();
-    bool write_rule();
-    void query_rule();
+	void init();
+	void loadRuleFromFile(const std::string &filename = FILE_RULE);
+	void updateRuleInFile(int index, const my_rule &rule, operation op);
+	std::string ruleTostring(const my_rule	&rule);
+	void query(unsigned int rule, unsigned int index);
 	~configure();
 private:
     std::string rule_name;
-    my_rule rules[MAX_RULE];
+    std::vector<my_rule> rules;
 };
