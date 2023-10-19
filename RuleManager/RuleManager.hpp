@@ -7,6 +7,7 @@ public:
     void addRule();
     void modifyRule();
     void deleteRule();
+    void query_rule();
 private:
     configure &config;
     

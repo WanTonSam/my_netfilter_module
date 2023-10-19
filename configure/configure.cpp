@@ -178,8 +178,9 @@ void configure::printFormattedRule(const my_rule &rule) {
     }
 }
 
-void configure::query(unsigned int rule, unsigned int index)
+void configure::query(unsigned int rule)
 {
+    /*
     if (index != -1)
     {
         std::cout << "--------------------- Rule ---------------------" << std::endl;
@@ -187,17 +188,15 @@ void configure::query(unsigned int rule, unsigned int index)
         printFormattedRule(rules[index]);
         std::cout << "------------------------------------------------" << std::endl;
         return;
-    }
+    }*/
     std::cout << "--------------------- Rule ---------------------" << std::endl;
     for (int i = 0; i < rules.size(); i++)
     {
-        std::cout << std::endl;
-        if (rules[i].rule == rule){
-            std::cout << "--------------index:" << i << "--------------" << std::endl;
+        if (rules[i].rule == rule || rule == 2){
+            std::cout << "--------------start index:" << i << "--------------" << std::endl;
             printFormattedRule(rules[i]);
-            std::cout << "--------------end----------------" << std::endl;
+            std::cout << "--------------end index:" << i <<  "----------------" << std::endl;
         }
-            
     }
     std::cout << "------------------------------------------------" << std::endl;
     return;

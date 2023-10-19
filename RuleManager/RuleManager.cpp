@@ -88,3 +88,12 @@ void RuleManager::modifyRule()
 
     config.updateRuleInFile(index, rule, Modify_rule);
 }
+
+void RuleManager::query_rule()
+{
+    unsigned int rule;
+    std::cout << "Please enter 0-IPv4 rule / 1-IPv6 rule / 2-All rule : ";
+    rule = Validator::getValidUnsignedint();
+
+    config.query(rule);
+}

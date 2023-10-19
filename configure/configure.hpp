@@ -45,7 +45,8 @@ public:
 	bool updateRuleInFile(int index, const my_rule &rule, operation op);
 	std::string ruleTostring(const my_rule	&rule);
 	void printFormattedRule(const my_rule &rule);
-	void query(unsigned int rule, unsigned int index);
+	void query(unsigned int rule);
+	const std::vector<my_rule> & getRules() const {return rules;};
 	~configure();
 private:
     std::string rule_name;

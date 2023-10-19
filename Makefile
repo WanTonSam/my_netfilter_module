@@ -1,3 +1,5 @@
+obj-m += wds.o
+MOD_NAME := "wds.ko"
 SRC_DIRS := . configure RuleManager Validator
 
 # 使用通配符找到所有 .cpp 文件
