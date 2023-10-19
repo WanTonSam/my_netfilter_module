@@ -57,7 +57,7 @@ void RuleManager::addRule()
     result = config.updateRuleInFile(-1, newRule, Add_rule);
 
     if (result)
-        std::cout << "Add rule successfully!" << std::endl;
+        std::cout << std::endl << "Add rule successfully!" << std::endl << std::endl;
     else std::cout << "Add rule fail" << std::endl;
 }
 
@@ -74,7 +74,7 @@ void RuleManager::deleteRule()
     result = config.updateRuleInFile(index, rule, Delete_rule);
 
     if(result)
-        std::cout << "Delete rule successfully!" << std::endl;
+        std::cout << std::endl << "Delete rule successfully!" << std::endl << std::endl;
     else std::cout << "Delelte rule fail!" << std::endl;
 }
 

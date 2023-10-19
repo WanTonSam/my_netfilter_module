@@ -8,6 +8,11 @@
 
 #include "configure.hpp"
 
+std::string getprotocolName(std::string protocol)
+{
+    return (protocol == "1") ? "ICMP" : ((protocol == "6") ? "TCP" : "UDP");
+}
+
 bool fileExists(const std::string& filename) {
     std::ifstream file(filename);
     return file.good();
@@ -155,6 +160,13 @@ void configure::printFormattedRule(const my_rule &rule) {
 
         if (rule.rule == 0 && (labels[idx] == "Source IPv6" || labels[idx] == "Destination IPv6"))
         {
+            idx++;
+            continue;
+        }
+
+        if (labels[idx] == "Protocol")
+        {
+            std::cout << labels[idx] << ": " << getprotocolName(item) << std::endl;
             idx++;
             continue;
         }

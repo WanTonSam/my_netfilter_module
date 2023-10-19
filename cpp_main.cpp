@@ -21,7 +21,7 @@ private:
 "******** 3. Modify rule in Firewall ***********",
 "******** 4. Delete rule in Firewall ***********",
 "******** 5. Query rule in Firewall ************",
-"******** 6. enter Q to quit *******************",
+"******** enter 0 to quit **********************",
 };
 
 };
@@ -35,20 +35,13 @@ int main(int argc, char * argv[])
     menu mainMenu;
     std::shared_ptr<RuleManager> ruleManager = std::make_shared<RuleManager>(config);
     int op;
-    char scan_string[100];
     while (true)
     {
         mainMenu.display();
+       
+        std::cin >> op;
 
-        if (fgets(scan_string, sizeof(scan_string), stdin) == NULL)
-            continue;
-
-        if (scan_string[0] == 'Q' || scan_string[0] == 'q')
-            break;
-
-        op = atoi(scan_string);
-
-        switch (op) 
+        switch (op)
         {
         case 1 :
             std::cout << "Please enter 1 : Enable / 0 : Disable: ";
