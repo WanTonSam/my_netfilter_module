@@ -3,14 +3,15 @@
 #include <fstream>
 #include <memory>
 #include <fcntl.h>
+#include <csignal>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include "RuleManager.hpp"
 #include "configure.hpp"
 
-//using namespace std;
 
+//using namespace std;
 class DeviceFile {
 public:
     DeviceFile(const char* path) {
@@ -37,11 +38,10 @@ public:
         }
         return bytes_written;
     }
-
-private:
-    int fd = -1;
+public:
+    static int fd;
 };
-
+int DeviceFile::fd = -1;
 
 class menu {
 public:
@@ -63,14 +63,32 @@ private:
 //query rules
 //add rule
 //delete rule
+void sigint_handler(int signum)
+{
+	printf("exit and remove the module\n");
+    if (DeviceFile::fd)
+        close(DeviceFile::fd);
+	system("rmmod wds.ko");
+	exit(1);
+}
+
+
 
 int main(int argc, char * argv[])
 {
+    system("insmod wds.ko");
     configure config;
     DeviceFile device("/dev/controlinfo");
     device.writeData(config.getRules());
     menu mainMenu;
     std::shared_ptr<RuleManager> ruleManager = std::make_shared<RuleManager>(config);
+
+    if (signal(SIGINT, sigint_handler) == SIG_ERR)
+	{
+		perror("Failed to set signal handler");
+		return 1;
+	}
+
     int op;
     while (true)
     {
@@ -78,6 +96,7 @@ int main(int argc, char * argv[])
        
         std::cin >> op;
 
+        if (op == 0) break;
         switch (op)
         {
         case 1 :
@@ -112,6 +131,7 @@ int main(int argc, char * argv[])
             break;
         }
     }
-
+    close(DeviceFile::fd);
+    system("rmmod wds.ko");
     return 0;
 }
