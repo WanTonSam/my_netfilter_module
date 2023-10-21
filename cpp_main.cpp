@@ -14,14 +14,10 @@
 //using namespace std;
 class DeviceFile {
 public:
-    DeviceFile(const char* path) {
-        if (mknod(path, S_IFCHR | 0666, makedev(124, 0)) == -1) {
+    DeviceFile(const char* _path)  : path(_path) {
+        system("insmod wds.ko");
+        if (mknod(_path, S_IFCHR | 0666, makedev(124, 0)) == -1) {
             //throw std::runtime_error("mknod error");
-        }
-
-        fd = open(path, O_WRONLY);
-        if (fd == -1) {
-            throw std::runtime_error("Failed to open device file");
         }
     }
 
@@ -29,17 +25,25 @@ public:
         if (fd != -1) {
             close(fd);
         }
+        system("rmmod wds.ko");
     }
 
     ssize_t writeData(const std::vector<my_rule> &rules) {
+        fd = open(path, O_WRONLY);
+        if (fd == -1) {
+            throw std::runtime_error("Failed to open device file");
+        }
         ssize_t bytes_written = write(fd, rules.data(), sizeof(my_rule) * rules.size());
         if (bytes_written == -1) {
+            close(fd);
             throw std::runtime_error("Failed to write to device");
         }
+        close(fd);
         return bytes_written;
     }
 public:
     static int fd;
+    const char * path;
 };
 int DeviceFile::fd = -1;
 
@@ -76,7 +80,6 @@ void sigint_handler(int signum)
 
 int main(int argc, char * argv[])
 {
-    system("insmod wds.ko");
     configure config;
     DeviceFile device("/dev/controlinfo");
     device.writeData(config.getRules());
@@ -104,11 +107,15 @@ int main(int argc, char * argv[])
             std::cin >> op;
             if (op == 0)
             {
-
+                if ( 0 == system("rmmod wds.ko"))
+                    std::cout << "Disable the firewall successfully" << std::endl;
+                else std::cout << "Fail to disable firewall" << std::endl;
             }
             else 
             {
-
+                if ( 0 == system("insmod wds.ko"))
+                    std::cout << "Enable the firewall successfully" << std::endl;
+                else std::cout << "Fail to enable firewall" << std::endl;
             }
             break;
         case 2 :
@@ -131,7 +138,5 @@ int main(int argc, char * argv[])
             break;
         }
     }
-    close(DeviceFile::fd);
-    system("rmmod wds.ko");
     return 0;
 }
